@@ -16,7 +16,7 @@ def help():
 AdbOut = False
 Output = True
 
-default_paths = [(, ), ("./source", "/storage/self/primary/dest")]
+default_paths = [ (, ), ("./source", "/storage/self/primary/dest") ]
 defaulti = 0
 
 i = 0
@@ -46,7 +46,7 @@ if __name__ == '__main__':
             i+=1
 
 if Output: print("-[ Sync music between device and computer ]-",file=sys.stderr)
-print("If this hangs after you connect device, press kill script, and run sudo adb kill-server; sudo adb start-server",file=sys.stderr)
+print("If this hangs after you connect device, please kill script or adb server",file=sys.stderr)
 out = subprocess.run(("adb", "wait-for-device"), capture_output=not AdbOut)
 if out.returncode != 0:
     if not AdbOut: print(str(out.stdout,encoding='utf-8'))
@@ -58,17 +58,18 @@ def sync(lp, rp):
     start  = time.time()
     local  = subprocess.getoutput("ls -A '{}'".format(lp)).split("\n")
     remote = subprocess.getoutput(f"adb shell 'ls -A \'{rp}\''").split("\n")
-    push   = [f for f in local if f not in remote]
-    pull   = [f for f in remote if f not in local and not f.find("minecraft")>-1]
+    push   = [f for f in local]
+    pull   = [f for f in remote if f not in local and not "minecraft" in f]
     tot    = len(local)+len(remote)
     diff   = len(push)+len(pull)
     print(f"{tot} total files, {diff} different.")
     push=[lp+f for f in push]
     if len(push)>0:
         if Output: print("Pushing",len(push),"files to device...",file=sys.stderr)
-        out = subprocess.run(("adb","push")+tuple(push)+(rp,), capture_output=not AdbOut)
+        out = subprocess.run(("adb","push","--sync","-z","brotli")+tuple(push)+(rp,), capture_output=not AdbOut)
         if Output and out.returncode == 0:
             print(f"{round(100*len(push)/diff,1)}% Done in {round(time.time()-start,1)} secs.",file=sys.stderr)
+            print(f"Estimated time remaining: {round((time.time()-start)/len(push)*len(pull),1)} secs.",file=sys.stderr)
         if out.returncode != 0:
             if not AdbOut: print(str(out.stdout,encoding='utf-8'))
             print("^Error!")
@@ -78,12 +79,17 @@ def sync(lp, rp):
     pull=[rp+f for f in pull]
     if len(pull)>0:
         if Output: print("Pulling", len(pull), "files from device...",file=sys.stderr)
-        out = subprocess.run(("adb","pull")+tuple(pull)+(lp,), capture_output=not AdbOut)
+        out = subprocess.run(("adb","pull","-a","-z","brotli")+tuple(pull)+(lp,), capture_output=not AdbOut)
         if Output and out.returncode == 0:
             print("100.0% Done in", round(time.time()-start,1), "secs.",file=sys.stderr)
         if out.returncode != 0:
             if not AdbOut: print(str(out.stdout,encoding='utf-8'))
-            print("^Error!")
+            print("\a^Error!\a\a")
+            sleep(0.05)
+            for i in range(4):
+                print(end="\a",flush=True)
+                sleep(0.15)
+            print()
     else:
         if Output: print("No files pulled.",file=sys.stderr)
     return 0
