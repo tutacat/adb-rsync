@@ -1,4 +1,4 @@
-#adb-rsync.py
+# adb-rsync.py
 
 Rsync for ADB with PC folders, without rsync
 
