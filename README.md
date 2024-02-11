@@ -2,6 +2,6 @@
 
 Rsync for ADB with PC folders, without rsync
 
-If you do want rsync, that is available with something like Termux running sshd
-and using rsync proper.
+Actual rsync is better, that is available with a terminal environment like Termux running sshd
+and installing rsync on the computer and terminal environment.
 
